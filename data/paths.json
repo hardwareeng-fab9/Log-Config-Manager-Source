@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "paths": [
+    {
+      "id": "P0002",
+      "name": "0100-04151 Test Log",
+      "path": "\\\\10.10.40.16\\Intel\\10. TE - Test Engineer\\Test Log\\0100-04151 Test Log",
+      "type": "folder",
+      "status": "EXISTS",
+      "last_checked": ""
+    },
+    {
+      "id": "P0003",
+      "name": "753587 Test Log",
+      "path": "\\\\10.10.40.16\\Intel\\10. TE - Test Engineer\\Test Log\\753587 Test Log",
+      "type": "folder",
+      "status": "EXISTS",
+      "last_checked": ""
+    },
+    {
+      "id": "P0004",
+      "name": "758512 (770731) Test Log",
+      "path": "\\\\10.10.40.16\\Intel\\10. TE - Test Engineer\\Test Log\\758512 (770731) Test Log",
+      "type": "folder",
+      "status": "EXISTS",
+      "last_checked": ""
+    },
+    {
+      "id": "P0005",
+      "name": "770810 (770720) Test Log",
+      "path": "\\\\10.10.40.16\\Intel\\10. TE - Test Engineer\\Test Log\\770810 (770720) Test Log",
+      "type": "folder",
+      "status": "EXISTS",
+      "last_checked": ""
+    },
+    {
+      "id": "P0006",
+      "name": "780281 (770724) Test Log",
+      "path": "\\\\10.10.40.16\\Intel\\10. TE - Test Engineer\\Test Log\\780281 (770724) Test Log",
+      "type": "folder",
+      "status": "EXISTS",
+      "last_checked": ""
+    },
+    {
+      "id": "P0007",
+      "name": "770684 (770683) Test Log",
+      "path": "\\\\10.10.40.16\\Intel\\10. TE - Test Engineer\\Test Log\\770684 (770683) Test Log",
+      "type": "folder",
+      "status": "EXISTS",
+      "last_checked": ""
+    },
+    {
+      "id": "P0008",
+      "name": "ICMP Network & Analyzer Test Log",
+      "path": "\\\\10.10.40.16\\Intel\\10. TE - Test Engineer\\Test Log\\ICMP Network & Analyzer Test Log",
+      "type": "folder",
+      "status": "EXISTS",
+      "last_checked": ""
+    },
+    {
+      "id": "P0001",
+      "name": "Test Log",
+      "path": "\\\\10.10.40.16\\Intel\\10. TE - Test Engineer\\Test Log",
+      "type": "folder",
+      "status": "EXISTS",
+      "last_checked": ""
+    }
+  ]
+}

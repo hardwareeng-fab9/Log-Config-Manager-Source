@@ -7,7 +7,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, ttk
 
 from .security import MIN_PASSWORD_LENGTH, hash_password, verify_password
-from .storage import DataStore, StorageError, check_path, next_id
+from .storage import DataStore, StorageError, check_path, classify_path, checked_at, next_id
 
 
 class AdminAuthDialog(simpledialog.Dialog):
@@ -58,8 +58,10 @@ class AdminAuthDialog(simpledialog.Dialog):
         project = self.project.get().strip().casefold()
         username = self.username.get().strip().casefold()
         for row in self.accounts:
+            if not row.get("enabled", True):
+                continue
             if row["project_name"].casefold() == project and row["user_name"].casefold() == username:
-                if verify_password(self.password.get(), row["password"]):
+                if verify_password(self.password.get(), row["password_hash"]):
                     self.authorized = row
                     self.password.set("")
                     return True
@@ -91,7 +93,9 @@ class TestPathManagerApp:
         self._set_path_mode(None)
         self._set_account_mode(None)
         self._update_counts()
-        self.log("Application launched. Files are stored beside the executable.")
+        self.log("Application launched. JSON files are stored beside the executable.")
+        for migration_message in self.store.migration_messages:
+            self.log(migration_message, "OK")
         self.log(f"Path records: {len(self.paths)} | Engineer accounts: {len(self.accounts)}")
         if self.accounts:
             self.log("Engineer password protection is ON (configured accounts found).", "OK")
@@ -156,7 +160,7 @@ class TestPathManagerApp:
         tree = ttk.Treeview(frame, columns=columns, show="headings", selectmode="browse")
         for col, heading, width in zip(columns, headers, widths):
             tree.heading(col, text=heading)
-            tree.column(col, width=width, minwidth=60, stretch=col not in ("id", "status", "password"))
+            tree.column(col, width=width, minwidth=60, stretch=col not in ("id", "status", "password_hash"))
         ybar = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
         xbar = ttk.Scrollbar(frame, orient="horizontal", command=tree.xview)
         tree.configure(yscrollcommand=ybar.set, xscrollcommand=xbar.set)
@@ -182,7 +186,7 @@ class TestPathManagerApp:
         self.path_check_btn.pack(side="left", padx=(0, 6))
         self.path_check_all_btn = ttk.Button(row, text="Check All", command=self.check_all_paths)
         self.path_check_all_btn.pack(side="left", padx=(0, 6))
-        ttk.Button(row, text="Reload TXT", command=self.refresh_all).pack(side="left")
+        ttk.Button(row, text="Reload JSON", command=self.refresh_all).pack(side="left")
         self.path_tree = self._make_tree(left, ("id", "name", "path", "status"),
                                          ("ID", "Name", "Path", "Status"), (84, 170, 350, 120))
         self.path_tree.bind("<<TreeviewSelect>>", self._on_path_select)
@@ -246,7 +250,7 @@ class TestPathManagerApp:
         ttk.Label(left, text="Passwords are stored as salted hashes; actual passwords cannot be displayed.",
                   style="Sub.TLabel", wraplength=580).pack(anchor="w", pady=(7, 2))
         self.account_tree = self._make_tree(left,
-                                            ("id", "project_name", "user_name", "password"),
+                                            ("id", "project_name", "user_name", "password_hash"),
                                             ("ID", "Project Name", "User Name", "Password"),
                                             (80, 220, 200, 120))
         self.account_tree.bind("<<TreeviewSelect>>", self._on_account_select)
@@ -331,7 +335,7 @@ class TestPathManagerApp:
     def _update_counts(self) -> None:
         self.footer_var.set(
             f"Path entries: {len(self.paths)}    |    Engineer accounts: {len(self.accounts)}    |    "
-            "TXT format: tab-separated (UTF-8)    |    Protection: "
+            "JSON format: UTF-8 (v1)    |    Protection: "
             + ("ON (Engineer password)" if self.accounts else "OFF (no account)")
         )
 
@@ -339,7 +343,11 @@ class TestPathManagerApp:
         if not self.accounts:
             self.log(f"No password configured; proceeding with: {action}")
             return True
-        dialog = AdminAuthDialog(self.root, self.accounts, action, self.last_login)
+        eligible = [a for a in self.accounts if a.get("enabled", True)]
+        if not eligible:
+            self._error("No enabled Engineer account can authorize this operation.")
+            return False
+        dialog = AdminAuthDialog(self.root, eligible, action, self.last_login)
         if dialog.authorized is None:
             self.log(f"Engineer authorization canceled/denied for: {action}", "WARN")
             return False
@@ -474,7 +482,12 @@ class TestPathManagerApp:
         if not messagebox.askyesno("Confirm update", f"Save changes to Path {rid} ({name})?", parent=self.root):
             self.log(f"Save canceled for Path {rid}.", "WARN")
             return
-        row = {"id": rid, "name": name, "path": path, "status": check_path(path)}
+        previous = next((p for p in self.paths if p["id"] == rid), None)
+        detected_type = classify_path(path)
+        if detected_type == "unknown" and previous and previous["path"] == path:
+            detected_type = previous["type"]
+        row = {"id": rid, "name": name, "path": path,
+               "type": detected_type, "status": check_path(path), "last_checked": checked_at()}
         updated = ([p for p in self.paths if p["id"] != rid] + [row]
                    if self.path_mode == "edit" else self.paths + [row])
         try:
@@ -529,10 +542,14 @@ class TestPathManagerApp:
                 if new_status != item["status"]:
                     changed += 1
                 item["status"] = new_status
+                item["last_checked"] = checked_at()
+                detected_type = classify_path(item["path"])
+                if detected_type != "unknown":
+                    item["type"] = detected_type
                 self.log(f"Path {item['id']} ({item['name']}): {new_status}",
                          "OK" if new_status == "EXISTS" else "WARN")
             updated.append(item)
-        if changed:
+        if ids:
             try:
                 self.store.save_paths(updated)
             except StorageError as exc:
@@ -614,7 +631,7 @@ class TestPathManagerApp:
         if not username:
             messagebox.showwarning("Missing details", "Engineer username is required.", parent=self.root)
             return
-        # Preserve the specified four-column TXT schema without forcing project creation.
+        # Project is optional; a missing name is saved as DEFAULT.
         project = project or "DEFAULT"
         if any(a["project_name"].casefold() == project.casefold()
                and a["user_name"].casefold() == username.casefold()
@@ -634,8 +651,10 @@ class TestPathManagerApp:
                                    parent=self.root):
             return
         old = next((a for a in self.accounts if a["id"] == rid), None)
-        encoded = hash_password(password) if password else old["password"]  # type: ignore[index]
-        row = {"id": rid, "project_name": project, "user_name": username, "password": encoded}
+        encoded = hash_password(password) if password else old["password_hash"]  # type: ignore[index]
+        row = {"id": rid, "project_name": project, "user_name": username,
+               "password_hash": encoded, "role": old["role"] if old else "engineer",
+               "enabled": old["enabled"] if old else True}
         updated = ([a for a in self.accounts if a["id"] != rid] + [row]
                    if self.account_mode == "edit" else self.accounts + [row])
         try:
@@ -683,7 +702,7 @@ class TestPathManagerApp:
 
     def refresh_all(self) -> None:
         if self.path_mode or self.account_mode:
-            if not messagebox.askyesno("Discard edits", "Reloading TXT will discard unsaved edits. Continue?",
+            if not messagebox.askyesno("Discard edits", "Reloading JSON will discard unsaved edits. Continue?",
                                        parent=self.root):
                 return
         try:
@@ -699,7 +718,7 @@ class TestPathManagerApp:
         self._set_account_mode(None)
         self._populate_paths()
         self._populate_accounts()
-        self.log("Reloaded paths.txt and accounts.txt.", "OK")
+        self.log("Reloaded paths.json and accounts.json.", "OK")
         if not self.accounts:
             self.log("No Engineer accounts loaded; protection is OFF.", "WARN")
 

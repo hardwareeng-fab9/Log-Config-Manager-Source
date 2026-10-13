@@ -1,0 +1,10 @@
+TestPath Manager v1.2 — JSON upgrade
+------------------------------------
+- DataStore now uses paths.json / accounts.json (UTF-8, formatted JSON v1).
+- Legacy TXT/TSV v1.1 files auto-imported only when corresponding JSON is absent.
+- Old TXT files retained untouched for backup; hashed account passwords retained.
+- Added type and last_checked for path entries, role and enabled for accounts.
+- Added JSON schema validation, duplicate ID checks and atomic file writes.
+- GUI now says Reload JSON; keeps 2 tabs, Event Log and confirmation popups.
+- First-time startup does NOT require a project or engineer account.
+- Reworked Windows EXE build to protect existing data and allow migration.

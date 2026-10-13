@@ -45,6 +45,56 @@ class TestGUI(unittest.TestCase):
         self.app.refresh_all()
         self.assertEqual(self.app.accounts, [])
 
+    def test_path_json_check_and_edit_delete(self):
+        self.app = TestPathManagerApp(self.root, self.store)
+        self.app.add_path()
+        self.app.path_name_var.set("first path")
+        self.app.path_value_var.set(self.tmp.name)
+        with patch("app.gui.messagebox.askyesno", return_value=True):
+            self.app.save_path()
+        one = self.store.load_paths()[0]
+        self.assertEqual(one["type"], "folder")
+        self.assertTrue(one["last_checked"])
+        rid = one["id"]
+        self.app.path_tree.selection_set(rid)
+        self.app.edit_path()
+        self.app.path_name_var.set("second path")
+        with patch("app.gui.messagebox.askyesno", return_value=True):
+            self.app.save_path()
+        edited = self.store.load_paths()
+        self.assertEqual(len(edited), 1)
+        self.assertEqual(edited[0]["id"], rid)
+        self.assertEqual(edited[0]["name"], "second path")
+        self.app.check_all_paths()
+        self.assertEqual(self.store.load_paths()[0]["status"], "EXISTS")
+        self.app.path_tree.selection_set(rid)
+        with patch("app.gui.messagebox.askyesno", return_value=True):
+            self.app.delete_path()
+        self.assertEqual(self.store.load_paths(), [])
+        self.assertIn("JSON", self.app.footer_var.get())
+
+    def test_account_password_hash_remains_on_edit(self):
+        self.app = TestPathManagerApp(self.root, self.store)
+        self.app.add_account()
+        self.app.account_user_var.set("eng")
+        self.app.account_password_var.set("longpassword1!")
+        with patch("app.gui.messagebox.askyesno", return_value=True):
+            self.app.save_account()
+        account = self.store.load_accounts()[0]
+        hashed = account["password_hash"]
+        self.app.account_tree.selection_set(account["id"])
+        self.app.edit_account()
+        self.app.account_user_var.set("eng_new")
+        self.app.account_password_var.set("")
+        with patch("app.gui.messagebox.askyesno", return_value=True), \
+             patch.object(self.app, "_authorize", return_value=True):
+            self.app.save_account()
+        updated = self.store.load_accounts()[0]
+        self.assertEqual(updated["user_name"], "eng_new")
+        self.assertEqual(updated["password_hash"], hashed)
+        self.assertEqual(updated["role"], "engineer")
+        self.assertTrue(updated["enabled"])
+
     def test_optional_first_account_no_project_required(self):
         self.app = TestPathManagerApp(self.root, self.store)
         self.app.add_account()

@@ -1,2 +1,2 @@
-# Runtime: Python standard library only (Tkinter included with standard Windows Python installer).
-# For building Windows .exe, install PyInstaller separately: py -m pip install pyinstaller
+# Runtime uses only Python standard library (Tkinter from normal Windows Python installer).
+# For building a Windows .exe, install PyInstaller: py -m pip install pyinstaller

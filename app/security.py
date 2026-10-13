@@ -13,7 +13,7 @@ MIN_PASSWORD_LENGTH = 8
 
 
 def hash_password(password: str) -> str:
-    """Create a salted, one-way verifier suitable for storage in accounts.txt."""
+    """Create a salted, one-way verifier suitable for storage in accounts.json."""
     if len(password) < MIN_PASSWORD_LENGTH:
         raise ValueError(f"Password must have at least {MIN_PASSWORD_LENGTH} characters.")
     salt = os.urandom(16)
