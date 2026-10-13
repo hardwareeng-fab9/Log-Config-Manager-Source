@@ -64,6 +64,14 @@
       "type": "folder",
       "status": "EXISTS",
       "last_checked": ""
+    },
+    {
+      "id": "P0009",
+      "name": "770368 Test Log",
+      "path": "\\\\10.10.40.16\\Intel\\10. TE - Test Engineer\\Test Log\\770368 Test Log",
+      "type": "folder",
+      "status": "EXISTS",
+      "last_checked": "2026-10-13T14:03:11+07:00"
     }
   ]
 }
