@@ -1,0 +1,9 @@
+TestPath Manager v1.1
+
+1. No forced first-run Project/Engineer registration.
+2. When accounts.txt contains only the header, path management operates without a password.
+3. Engineer accounts are optional; create one to turn on password protection.
+4. Project name can be left blank when adding an account; DEFAULT is used.
+5. Single Engineer authorizes changes with password only.
+6. Last Engineer account can be deleted after authentication and extra confirmation.
+7. Old paths.txt and accounts.txt remain compatible. Backup data before upgrading.
